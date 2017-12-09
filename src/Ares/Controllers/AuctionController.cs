@@ -13,6 +13,14 @@ public class AuctionsController : Controller
     public IActionResult GetById(int id)
     {
         var auction = repository.GetById(id);
-        return Json(auction);
+
+        if (auction == null)
+        {
+            return NotFound();
+        }
+        else
+        {
+            return Json(auction);
+        }
     }
 }

@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json;
 using System.Threading.Tasks;
+using System.Net;
 
 namespace AresTests
 {
@@ -47,6 +48,36 @@ namespace AresTests
 
                 response.EnsureSuccessStatusCode();
                 Assert.True(auction.Id == expectedId);                
+            }
+        }
+
+        [Fact]
+        public async Task GetAuctionByIdReturns404WhenNotFound()
+        {
+            var auctionRepository = new Mock<IRepository<Auction>>();
+
+            auctionRepository
+                .Setup(p => p.GetById(It.IsAny<int>()))
+                .Returns(default(Auction));
+
+            var hostBuilder = Program.CreateWebHostBuilder(new string[] { })
+                                        .UseUrls(API_URL)
+                                        .ConfigureServices((services) =>
+                                        {
+                                            services.AddTransient((s) =>
+                                            {
+                                                return auctionRepository.Object;
+                                            });
+                                        });
+
+            using (var server = new TestServer(hostBuilder))
+            {
+                var client = server.CreateClient();
+
+                var notExistingResourceId = 999;
+                var response = await client.GetAsync($"{API_URL}/Auctions/{notExistingResourceId}");
+
+                Assert.True(response.StatusCode == HttpStatusCode.NotFound);
             }
         }
     }
