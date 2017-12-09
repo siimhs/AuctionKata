@@ -7,6 +7,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json;
 using System.Threading.Tasks;
 using System.Net;
+using System.Net.Http;
 
 namespace AresTests
 {
@@ -26,29 +27,16 @@ namespace AresTests
                 .Setup(p => p.GetById(It.IsAny<int>()))
                 .Returns(fakeAuction);
 
-            var hostBuilder = Program.CreateWebHostBuilder(new string[] { })
-                                        .UseUrls(API_URL)
-                                        .ConfigureServices((services) =>
-                                        {
-                                            services.AddTransient((s) =>
-                                            {
-                                                return auctionRepository.Object;
-                                            });
-                                        });
+            var hostBuilder = CreateAndSetupHostBuilderWith(auctionRepository.Object);
 
-            using (var server = new TestServer(hostBuilder))
-            {
-                var client = server.CreateClient();
+            var response = await GetResponse(hostBuilder, $"{API_URL}/Auctions/{expectedId}");
 
-                var response = await client.GetAsync($"{API_URL}/Auctions/{expectedId}");
+            var json = response.Content.ReadAsStringAsync().Result;
 
-                var json = response.Content.ReadAsStringAsync().Result;
+            var auction = JsonConvert.DeserializeObject<Auction>(json);
 
-                var auction = JsonConvert.DeserializeObject<Auction>(json);
-
-                response.EnsureSuccessStatusCode();
-                Assert.True(auction.Id == expectedId);                
-            }
+            response.EnsureSuccessStatusCode();
+            Assert.True(auction.Id == expectedId);
         }
 
         [Fact]
@@ -60,24 +48,35 @@ namespace AresTests
                 .Setup(p => p.GetById(It.IsAny<int>()))
                 .Returns(default(Auction));
 
+            var hostBuilder = CreateAndSetupHostBuilderWith(auctionRepository.Object);
+
+            var notExistingResourceId = 999;
+            var response = await GetResponse(hostBuilder, $"{API_URL}/Auctions/{notExistingResourceId}");
+
+            Assert.True(response.StatusCode == HttpStatusCode.NotFound);
+        }
+
+        private IWebHostBuilder CreateAndSetupHostBuilderWith(IRepository<Auction> repository)
+        {
             var hostBuilder = Program.CreateWebHostBuilder(new string[] { })
                                         .UseUrls(API_URL)
                                         .ConfigureServices((services) =>
                                         {
                                             services.AddTransient((s) =>
                                             {
-                                                return auctionRepository.Object;
+                                                return repository;
                                             });
                                         });
+            return hostBuilder;
+        }
 
+        private async Task<HttpResponseMessage> GetResponse(IWebHostBuilder hostBuilder, string url)
+        {
             using (var server = new TestServer(hostBuilder))
             {
                 var client = server.CreateClient();
 
-                var notExistingResourceId = 999;
-                var response = await client.GetAsync($"{API_URL}/Auctions/{notExistingResourceId}");
-
-                Assert.True(response.StatusCode == HttpStatusCode.NotFound);
+                return await client.GetAsync(url);
             }
         }
     }
