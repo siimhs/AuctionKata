@@ -1,11 +1,9 @@
-using System;
 using Xunit;
 using Ares;
 using Moq;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json;
 using System.Threading.Tasks;
 
@@ -16,15 +14,15 @@ namespace AresTests
         private const string API_URL = "http://localhost:5000";
 
         [Fact]
-        public async Task GetAuctionByIdReturnsJson()
+        public async Task GetAuctionByIdReturnsExistingAuctionWhenFound()
         {
             var expectedId = 1;
             var fakeAuction = new Auction() { Id = expectedId };
 
             var auctionRepository = new Mock<IRepository<Auction>>();
-            
+
             auctionRepository
-                .Setup(p => p.GetById(It.Is<int>(id => id == 1)))
+                .Setup(p => p.GetById(It.IsAny<int>()))
                 .Returns(fakeAuction);
 
             var hostBuilder = Program.CreateWebHostBuilder(new string[] { })
@@ -41,11 +39,14 @@ namespace AresTests
             {
                 var client = server.CreateClient();
 
-                var response = await client.GetStringAsync($"{API_URL}/Auctions/{expectedId}");
+                var response = await client.GetAsync($"{API_URL}/Auctions/{expectedId}");
 
-                var auction = JsonConvert.DeserializeObject<Auction>(response);
+                var json = response.Content.ReadAsStringAsync().Result;
 
-                Assert.True(auction.Id == expectedId);
+                var auction = JsonConvert.DeserializeObject<Auction>(json);
+
+                response.EnsureSuccessStatusCode();
+                Assert.True(auction.Id == expectedId);                
             }
         }
     }
