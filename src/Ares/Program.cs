@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore;
+﻿using System.Collections.Generic;
+using Microsoft.AspNetCore;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -31,6 +32,7 @@ namespace Ares
             var services = new ServiceCollection();
             
             services.AddTransient<IRepository<Auction>,Repository<Auction>>();
+            services.AddSingleton<List<Auction>>();
 
             return services;
         }
