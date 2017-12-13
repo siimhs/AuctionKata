@@ -1,5 +1,4 @@
 using Microsoft.AspNetCore.Mvc;
-using Newtonsoft.Json;
 
 public class AuctionsController : Controller
 {
@@ -29,6 +28,8 @@ public class AuctionsController : Controller
     [Route("[controller]")]
     public IActionResult AddAuction([FromBody] Auction auction)
     {
+        repository.Add(auction);
+        
         return Json(auction);
     }
 }
