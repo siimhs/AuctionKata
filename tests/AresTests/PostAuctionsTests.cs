@@ -30,14 +30,20 @@ namespace AresTests
                 Duration = Duration.FromHours(2)
             };
             
-            var responseAuction = await CreateSinglePostRequest(auction);
+            var response = await Post(auction);
+
+            response.EnsureSuccessStatusCode();
+
+            var responseJson = await response.Content.ReadAsStringAsync();
+
+            var responseAuction = JsonConvert.DeserializeObject<Auction>(responseJson, jsonSettings);
 
             Assert.Equal(auction.ProductOnAuction.Name, responseAuction.ProductOnAuction.Name);
             Assert.Equal(auction.ProductOnAuction.Description, responseAuction.ProductOnAuction.Description);
             Assert.Equal(auction.Duration, responseAuction.Duration);
         }
 
-        private async Task<Auction> CreateSinglePostRequest(Auction auction)
+        private async Task<HttpResponseMessage> Post(Auction auction)
         {
             var hostBuilder = Program.CreateWebHostBuilder(new string[] { })
                                         .UseUrls(API_URL);
@@ -50,13 +56,7 @@ namespace AresTests
 
                 var content = new StringContent(auctionJson, Encoding.UTF8, "application/json");
 
-                var response = await client.PostAsync($"{API_URL}/Auctions", content);
-
-                response.EnsureSuccessStatusCode();
-
-                var responseJson = await response.Content.ReadAsStringAsync();
-
-                return JsonConvert.DeserializeObject<Auction>(responseJson, jsonSettings);
+                return await client.PostAsync($"{API_URL}/Auctions", content);
             }
         }
 
