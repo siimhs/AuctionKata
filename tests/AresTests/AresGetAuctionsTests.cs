@@ -8,6 +8,8 @@ using Newtonsoft.Json;
 using System.Threading.Tasks;
 using System.Net;
 using System.Net.Http;
+using NodaTime;
+using NodaTime.Serialization.JsonNet;
 
 namespace AresTests
 {
@@ -33,7 +35,11 @@ namespace AresTests
 
             var json = response.Content.ReadAsStringAsync().Result;
 
-            var auction = JsonConvert.DeserializeObject<Auction>(json);
+            var settings = new JsonSerializerSettings();
+
+            settings.ConfigureForNodaTime(DateTimeZoneProviders.Tzdb);
+
+            var auction = JsonConvert.DeserializeObject<Auction>(json, settings);
 
             response.EnsureSuccessStatusCode();
             Assert.True(auction.Id == expectedId);

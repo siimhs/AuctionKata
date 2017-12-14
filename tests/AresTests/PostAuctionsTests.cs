@@ -7,19 +7,27 @@ using System.Text;
 using System.Threading.Tasks;
 using Xunit;
 using System.Net;
+using NodaTime;
+using NodaTime.Serialization.JsonNet;
 
 namespace AresTests
 {
     public class PostAuctionsTests
     {
         private const string API_URL = "http://localhost:5000";
+        private JsonSerializerSettings jsonSettings = new JsonSerializerSettings().ConfigureForNodaTime(DateTimeZoneProviders.Tzdb);
 
         [Fact]
         public async Task PostAuctionReturnsCreatedAuction()
         {
             var auction = new Auction()
             {
-                Id = 123
+                ProductOnAuction = new Product()
+                {
+                    Name = "My product",
+                    Description = "My product is worth its price!"
+                },
+                Duration = Duration.FromHours(2)
             };
 
             var hostBuilder = Program.CreateWebHostBuilder(new string[] { })
@@ -29,7 +37,7 @@ namespace AresTests
             {
                 var client = server.CreateClient();
 
-                var auctionJson = JsonConvert.SerializeObject(auction);
+                var auctionJson = JsonConvert.SerializeObject(auction, jsonSettings);
 
                 var content = new StringContent(auctionJson, Encoding.UTF8, "application/json");
 
@@ -39,9 +47,11 @@ namespace AresTests
 
                 var responseJson = await response.Content.ReadAsStringAsync();
 
-                var responseAuction = JsonConvert.DeserializeObject<Auction>(responseJson);
+                var responseAuction = JsonConvert.DeserializeObject<Auction>(responseJson, jsonSettings);
 
-                Assert.Equal(auction.Id, responseAuction.Id);
+                Assert.Equal(auction.ProductOnAuction.Name, responseAuction.ProductOnAuction.Name);
+                Assert.Equal(auction.ProductOnAuction.Description, responseAuction.ProductOnAuction.Description);
+                Assert.Equal(auction.Duration, responseAuction.Duration);
             }
         }
 
@@ -71,7 +81,7 @@ namespace AresTests
 
         private async Task CreateAuction(HttpClient client, int id)
         {
-            var auctionJson = JsonConvert.SerializeObject(new Auction() { Id = id });
+            var auctionJson = JsonConvert.SerializeObject(new Auction() { Id = id }, jsonSettings);
 
             var content = new StringContent(auctionJson, Encoding.UTF8, "application/json");
 
@@ -83,12 +93,12 @@ namespace AresTests
         private async Task AssertThatAuctionExists(HttpClient client, int id)
         {
             var response = await client.GetAsync($"{API_URL}/Auctions/{id}");
-            
+
             response.EnsureSuccessStatusCode();
 
             var responseJson = await response.Content.ReadAsStringAsync();
 
-            var responseAuction = JsonConvert.DeserializeObject<Auction>(responseJson);
+            var responseAuction = JsonConvert.DeserializeObject<Auction>(responseJson, jsonSettings);
 
             Assert.Equal(id, responseAuction.Id);
         }
