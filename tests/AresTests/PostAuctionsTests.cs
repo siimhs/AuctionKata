@@ -29,7 +29,16 @@ namespace AresTests
                 },
                 Duration = Duration.FromHours(2)
             };
+            
+            var responseAuction = await CreateSinglePostRequest(auction);
 
+            Assert.Equal(auction.ProductOnAuction.Name, responseAuction.ProductOnAuction.Name);
+            Assert.Equal(auction.ProductOnAuction.Description, responseAuction.ProductOnAuction.Description);
+            Assert.Equal(auction.Duration, responseAuction.Duration);
+        }
+
+        private async Task<Auction> CreateSinglePostRequest(Auction auction)
+        {
             var hostBuilder = Program.CreateWebHostBuilder(new string[] { })
                                         .UseUrls(API_URL);
 
@@ -47,11 +56,7 @@ namespace AresTests
 
                 var responseJson = await response.Content.ReadAsStringAsync();
 
-                var responseAuction = JsonConvert.DeserializeObject<Auction>(responseJson, jsonSettings);
-
-                Assert.Equal(auction.ProductOnAuction.Name, responseAuction.ProductOnAuction.Name);
-                Assert.Equal(auction.ProductOnAuction.Description, responseAuction.ProductOnAuction.Description);
-                Assert.Equal(auction.Duration, responseAuction.Duration);
+                return JsonConvert.DeserializeObject<Auction>(responseJson, jsonSettings);
             }
         }
 
