@@ -29,7 +29,7 @@ namespace AresTests
                 },
                 Duration = Duration.FromHours(2)
             };
-            
+
             var response = await Post(auction);
 
             response.EnsureSuccessStatusCode();
@@ -41,6 +41,23 @@ namespace AresTests
             Assert.Equal(auction.ProductOnAuction.Name, responseAuction.ProductOnAuction.Name);
             Assert.Equal(auction.ProductOnAuction.Description, responseAuction.ProductOnAuction.Description);
             Assert.Equal(auction.Duration, responseAuction.Duration);
+        }
+
+        [Fact]
+        public async Task PostAuctionWithoutDurationReturns422()
+        {
+            var auction = new Auction()
+            {
+                ProductOnAuction = new Product()
+                {
+                    Name = "My product",
+                    Description = "My product is worth its price!"
+                }
+            };
+
+            var response = await Post(auction);
+
+            Assert.Equal((HttpStatusCode)422, response.StatusCode);
         }
 
         private async Task<HttpResponseMessage> Post(Auction auction)
@@ -86,7 +103,7 @@ namespace AresTests
 
         private async Task CreateAuction(HttpClient client, int id)
         {
-            var auctionJson = JsonConvert.SerializeObject(new Auction() { Id = id }, jsonSettings);
+            var auctionJson = JsonConvert.SerializeObject(new Auction() { Id = id, Duration = Duration.Zero }, jsonSettings);
 
             var content = new StringContent(auctionJson, Encoding.UTF8, "application/json");
 

@@ -28,8 +28,15 @@ public class AuctionsController : Controller
     [Route("[controller]")]
     public IActionResult AddAuction([FromBody] Auction auction)
     {
-        repository.Add(auction);
-        
-        return Json(auction);
+        if (ModelState.IsValid)
+        {
+            repository.Add(auction);
+
+            return Json(auction);
+        }
+        else
+        {
+            return StatusCode(422);
+        }
     }
 }
