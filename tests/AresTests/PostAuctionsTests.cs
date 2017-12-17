@@ -60,6 +60,19 @@ namespace AresTests
             Assert.Equal((HttpStatusCode)422, response.StatusCode);
         }
 
+        [Fact]
+        public async Task PostAuctionWithoutProductReturns422()
+        {
+            var auction = new Auction()
+            {
+                Duration = default(Duration)
+            };
+
+            var response = await Post(auction);
+
+            Assert.Equal((HttpStatusCode)422, response.StatusCode);
+        }
+
         private async Task<HttpResponseMessage> Post(Auction auction)
         {
             var hostBuilder = Program.CreateWebHostBuilder(new string[] { })
