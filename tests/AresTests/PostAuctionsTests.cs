@@ -103,7 +103,18 @@ namespace AresTests
 
         private async Task CreateAuction(HttpClient client, int id)
         {
-            var auctionJson = JsonConvert.SerializeObject(new Auction() { Id = id, Duration = Duration.Zero }, jsonSettings);
+            var auction = new Auction()
+            {
+                Id = id,
+                Duration = default(Duration),
+                ProductOnAuction = new Product()
+                {
+                    Name = "My cool product",
+                    Description = "This is the best product in the world!"
+                }
+            };
+
+            var auctionJson = JsonConvert.SerializeObject(auction, jsonSettings);
 
             var content = new StringContent(auctionJson, Encoding.UTF8, "application/json");
 

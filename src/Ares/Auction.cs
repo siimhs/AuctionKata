@@ -4,6 +4,7 @@ using System.ComponentModel.DataAnnotations;
 public class Auction
 {
     public int Id { get; set; }
+    [Required]
     public Product ProductOnAuction { get; set; }
     [Required]
     public Duration? Duration { get; set; }
