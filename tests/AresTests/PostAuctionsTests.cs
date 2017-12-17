@@ -27,7 +27,8 @@ namespace AresTests
                     Name = "My product",
                     Description = "My product is worth its price!"
                 },
-                Duration = Duration.FromHours(2)
+                Duration = Duration.FromHours(2),
+                UserId = "User123"
             };
 
             var response = await Post(auction);
@@ -52,7 +53,8 @@ namespace AresTests
                 {
                     Name = "My product",
                     Description = "My product is worth its price!"
-                }
+                },
+                UserId = "User123"
             };
 
             var response = await Post(auction);
@@ -65,7 +67,27 @@ namespace AresTests
         {
             var auction = new Auction()
             {
-                Duration = default(Duration)
+                Duration = null,
+                UserId = "User123"
+            };
+
+            var response = await Post(auction);
+
+            Assert.Equal((HttpStatusCode)422, response.StatusCode);
+        }
+
+        [Fact]
+        public async Task PostAuctionWithoutUserIdReturns422()
+        {
+            var auction = new Auction()
+            {
+                Duration = Duration.Zero,
+                ProductOnAuction = new Product()
+                {
+                    Name = "My product",
+                    Description = "My product is worth its price!"
+                },
+                UserId = null
             };
 
             var response = await Post(auction);
@@ -124,7 +146,8 @@ namespace AresTests
                 {
                     Name = "My cool product",
                     Description = "This is the best product in the world!"
-                }
+                },
+                UserId = "User123"
             };
 
             var auctionJson = JsonConvert.SerializeObject(auction, jsonSettings);
