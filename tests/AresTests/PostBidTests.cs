@@ -1,6 +1,8 @@
 ﻿using Ares;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.TestHost;
+using Microsoft.Extensions.DependencyInjection;
+using Moq;
 using Newtonsoft.Json;
 using NodaTime;
 using NodaTime.Serialization.JsonNet;
@@ -27,7 +29,22 @@ namespace AresTests
                 UserId = "User123"
             };
 
-            var response = await Post(bid);
+            var auctionRepository = new Mock<IRepository<Auction>>();
+
+            auctionRepository
+                .Setup(p => p.GetById(It.IsAny<int>()))
+                .Returns(new Auction() { Id = bid.AuctionId.Value });
+
+            var services = new ServiceCollection();
+
+            services.AddTransient((s) =>
+            {
+                return auctionRepository.Object;
+            });
+
+            var host = CreateHost(services);
+
+            var response = await Post(bid, host);
 
             response.EnsureSuccessStatusCode();
 
@@ -49,7 +66,9 @@ namespace AresTests
                 Amount = 100
             };
 
-            var response = await Post(bid);
+            var host = CreateHost();
+
+            var response = await Post(bid, host);
 
             Assert.Equal((HttpStatusCode)422, response.StatusCode);
         }
@@ -63,7 +82,9 @@ namespace AresTests
                 Amount = 100
             };
 
-            var response = await Post(bid);
+            var host = CreateHost();
+
+            var response = await Post(bid, host);
 
             Assert.Equal((HttpStatusCode)422, response.StatusCode);
         }
@@ -77,16 +98,65 @@ namespace AresTests
                 UserId = "User123"
             };
 
-            var response = await Post(bid);
+            var host = CreateHost();
+
+            var response = await Post(bid, host);
 
             Assert.Equal((HttpStatusCode)422, response.StatusCode);
         }
 
-        private async Task<HttpResponseMessage> Post(Bid bid)
+        [Fact]
+        public async Task PostBidWithoutExistingAuctionReturns404NotFound()
+        {
+            var bid = new Bid()
+            {
+                AuctionId = 1,
+                UserId = "User123",
+                Amount = 100
+            };
+
+            var auctionRepository = new Mock<IRepository<Auction>>();
+
+            auctionRepository
+                .Setup(p => p.GetById(It.IsAny<int>()))
+                .Returns(default(Auction));
+
+            var services = new ServiceCollection();
+
+            services.AddTransient((s) =>
+            {
+                return auctionRepository.Object;
+            });
+
+            var host = CreateHost(services);
+
+            var response = await Post(bid, host);
+
+            Assert.Equal((HttpStatusCode)404, response.StatusCode);
+        }
+
+        private IWebHostBuilder CreateHost()
+        {
+            return CreateHost(new ServiceCollection());
+        }
+
+        private IWebHostBuilder CreateHost(IServiceCollection services)
         {
             var hostBuilder = Program.CreateWebHostBuilder(new string[] { })
-                                        .UseUrls(API_URL);
+                                        .UseUrls(API_URL)
+                                        .ConfigureServices((s) =>
+                                        {
+                                            foreach (var service in services)
+                                            {
+                                                s.Add(service);
+                                            }
+                                        });
 
+            return hostBuilder;
+        }
+
+        private async Task<HttpResponseMessage> Post(Bid bid, IWebHostBuilder hostBuilder)
+        {
             using (var server = new TestServer(hostBuilder))
             {
                 var client = server.CreateClient();
